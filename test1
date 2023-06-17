@@ -1,0 +1,74 @@
+import sys
+import cv2
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # Create the three child windows
+        self.window1 = CameraWindow(0)
+        self.window2 = CameraWindow(1)
+        self.window3 = CameraWindow(2)
+
+        # Set up the layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.window1)
+        layout.addWidget(self.window2)
+        layout.addWidget(self.window3)
+
+        # Set the layout as the central widget
+        central_widget = QWidget()
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
+        if __name__ == "__main__":
+             app = QApplication(sys.argv)
+             window = MainWindow()
+             window.show()
+             sys.exit(app.exec_())
+        
+        
+    
+class CameraWindow(QWidget):
+    def __init__(self, camera_index):
+        super().__init__()
+
+        self.camera_index = camera_index
+        self.capture = cv2.VideoCapture(self.camera_index)
+
+        # Create a label to display the camera feed
+        self.video_label = QLabel(self)
+        self.video_label.setAlignment(Qt.AlignCenter)
+
+        # Create a button to start and stop the feed
+        self.start_stop_button = QPushButton("Start", self)
+        self.start_stop_button.clicked.connect(self.start_stop_feed)
+
+        # Set up the layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.video_label)
+        layout.addWidget(self.start_stop_button)
+        self.setLayout(layout)
+
+        # Set up the timer for updating the feed
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_feed)
+        self.timer.start(30)  # Update the feed every 30ms
+
+    def update_feed(self):
+        _, frame = self.capture.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        height, width, _ = frame.shape
+        image = QImage(frame.data, width, height, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(image)
+        self.video_label.setPixmap(pixmap)
+
+    def start_stop_feed(self):
+        if self.timer.isActive():
+            self.timer.stop()
+            self.start_stop_button.setText("Start")
+        else:
+            self.timer.start()
+            self.start_stop_button.setText("Stop")
+
